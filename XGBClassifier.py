@@ -1,55 +1,50 @@
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from xgboost import XGBClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import argparse
 import joblib
-
-df = pd.read_csv('/content/crop_recommendation.csv')
-df.head()
-
-# 1. Separate features (X) and target variable (y)
-X = df.drop('label', axis=1)
-y = df['label']
-
-# 2. Initialize and fit LabelEncoder to the target variable
-le = LabelEncoder()
-y = le.fit_transform(y)
-
-# 3. Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-print("Features (X) and target (y) separated.")
-print(f"X_train shape: {X_train.shape}")
-print(f"X_test shape: {X_test.shape}")
-print(f"y_train shape: {y_train.shape}")
-print(f"y_test shape: {y_test.shape}")
+import pandas as pd
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from xgboost import XGBClassifier
 
 
-# Initialize the XGBoost Classifier
-xgb_model = XGBClassifier(random_state=42)
+def train(dataset_path: str):
+    df = pd.read_csv(dataset_path)
 
-# Train the model on the training data
-xgb_model.fit(X_train, y_train)
+    X = df.drop('label', axis=1)
+    y = df['label']
 
-print("XGBoost model initialized and trained successfully.")
+    label_encoder = LabelEncoder()
+    y_encoded = label_encoder.fit_transform(y)
 
-# 1. Make predictions on the test set
-y_pred = xgb_model.predict(X_test)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+    )
 
-# 2. Calculate evaluation metrics
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred, average='weighted')
-recall = recall_score(y_test, y_pred, average='weighted')
-f1 = f1_score(y_test, y_pred, average='weighted')
+    model = XGBClassifier(
+        random_state=42,
+        n_estimators=350,
+        max_depth=8,
+        learning_rate=0.08,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        objective='multi:softprob',
+        eval_metric='mlogloss'
+    )
+    model.fit(X_train, y_train)
 
-# 3. Print the metrics
-print(f"Model Accuracy: {accuracy:.4f}")
-print(f"Model Precision (weighted): {precision:.4f}")
-print(f"Model Recall (weighted): {recall:.4f}")
-print(f"Model F1-Score (weighted): {f1:.4f}")
+    y_pred = model.predict(X_test)
+    print(f"Accuracy:  {accuracy_score(y_test, y_pred):.4f}")
+    print(f"Precision: {precision_score(y_test, y_pred, average='weighted'):.4f}")
+    print(f"Recall:    {recall_score(y_test, y_pred, average='weighted'):.4f}")
+    print(f"F1 score:  {f1_score(y_test, y_pred, average='weighted'):.4f}")
 
-# Save the trained model to a file
-joblib.dump(xgb_model, 'xgboost_crop_model_dumb.joblib')
+    joblib.dump(model, 'xgboost_crop_model.joblib')
+    joblib.dump(label_encoder, 'label_encoder.joblib')
+    print('Saved: xgboost_crop_model.joblib, label_encoder.joblib')
 
-print("XGBoost model exported successfully as 'xgboost_crop_model.joblib'")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', default='crop_recommendation.csv')
+    args = parser.parse_args()
+    train(args.dataset)

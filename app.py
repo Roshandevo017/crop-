@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_file
 import numpy as np
 import joblib
+import random
 from datetime import datetime
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -10,39 +11,78 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from location_service import LocationService
+from tamilnadu_district_profiles import get_nearest_district_profile
 
 app = Flask(__name__)
 
 # Load XGBoost Model with CORRECT FILENAMES
 print("🔄 Loading XGBoost ML model...")
-try:
-    model = joblib.load("xgboost_crop_model.joblib")  # ✅ FIXED NAME
-    label_encoder = joblib.load("label_encoder.joblib")  # ✅ FIXED NAME
-    print("✅ XGBoost model loaded successfully")
-    print(f"✅ Model can predict {len(label_encoder.classes_)} crops")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    print("⚠️ Make sure these files exist:")
-    print("   - xgboost_crop_classifier.joblib")
-    print("   - label_encoder_crop.joblib")
-    model, label_encoder = None, None
+model, label_encoder = None, None
+for model_path, encoder_path in [
+    ("xgboost_crop_model.joblib", "label_encoder.joblib"),
+    ("xgboost_crop_classifier.joblib", "label_encoder_crop.joblib"),
+]:
+    try:
+        model = joblib.load(model_path)
+        label_encoder = joblib.load(encoder_path)
+        print(f"✅ Model loaded from {model_path}")
+        print(f"✅ Label encoder loaded from {encoder_path}")
+        print(f"✅ Model can predict {len(label_encoder.classes_)} crops")
+        break
+    except Exception:
+        continue
+
+if model is None or label_encoder is None:
+    print("❌ Error loading model artifacts")
+    print("⚠️ Expected one of:")
+    print("   - xgboost_crop_model.joblib + label_encoder.joblib")
+    print("   - xgboost_crop_classifier.joblib + label_encoder_crop.joblib")
 
 # Initialize Location Service (NO DATABASE)
 location_service = LocationService()
 
-def get_tamil_season():
-    """Current Tamil Nadu agricultural season"""
-    month = datetime.now().month
-    if month in [6, 7]: 
-        return {"name": "Kuruvai Pattam", "desc": "Short-term crop season", "crops": "Quick-maturing crops"}
-    elif month in [8, 9, 10, 11]: 
-        return {"name": "Samba Pattam", "desc": "Main monsoon season", "crops": "Rice, Cotton, Sugarcane"}
-    elif month in [1, 2]: 
-        return {"name": "Navarai Pattam", "desc": "Summer/Dry season", "crops": "Summer crops with irrigation"}
-    elif month in [4, 5]: 
-        return {"name": "Sornavari Pattam", "desc": "Pre-monsoon season", "crops": "Heat-tolerant crops"}
-    else:
-        return {"name": "Thaladi Season", "desc": "Late season", "crops": "Mixed crops"}
+def get_tamil_season(month=None):
+    """Tamil Nadu agricultural season mapping with full month coverage."""
+    month = month or datetime.now().month
+
+    # Practical month windows used in TN cropping calendars
+    if month in [6, 7, 8, 9]:
+        return {
+            "name": "Kuruvai Pattam",
+            "desc": "Southwest monsoon short-term season",
+            "crops": "Short-duration paddy, maize, pulses"
+        }
+    elif month in [10, 11, 12, 1]:
+        return {
+            "name": "Samba Pattam",
+            "desc": "Main long-duration monsoon season",
+            "crops": "Rice, sugarcane, banana"
+        }
+    elif month in [2, 3]:
+        return {
+            "name": "Navarai Pattam",
+            "desc": "Irrigated dry-season cultivation",
+            "crops": "Rice (irrigated), pulses, groundnut"
+        }
+    else:  # 4, 5
+        return {
+            "name": "Sornavari Pattam",
+            "desc": "Pre-monsoon warm season",
+            "crops": "Millets, pulses, cotton"
+        }
+
+
+def add_micro_location_variation(soil_defaults, latitude, longitude):
+    """Apply small deterministic variation inside a district so nearby areas are not identical."""
+    seed_value = int((round(latitude, 4) * 10000) + (round(longitude, 4) * 10000))
+    rng = random.Random(seed_value)
+
+    adjusted = dict(soil_defaults)
+    adjusted['N'] = max(0, min(140, round(adjusted['N'] + rng.uniform(-6, 6), 1)))
+    adjusted['P'] = max(0, min(145, round(adjusted['P'] + rng.uniform(-5, 5), 1)))
+    adjusted['K'] = max(0, min(210, round(adjusted['K'] + rng.uniform(-6, 6), 1)))
+    adjusted['pH'] = max(3.5, min(10, round(adjusted['pH'] + rng.uniform(-0.25, 0.25), 2)))
+    return adjusted
 
 def analyze_soil_fertility(N, P, K, pH):
     """Analyze soil fertility based on NPK and pH"""
@@ -98,58 +138,6 @@ def determine_soil_type(N, P, K, pH):
 # NEW: LOCATION-BASED DEFAULT VALUES (NO DATABASE)
 # ============================================================
 
-def get_location_defaults(latitude, longitude):
-    """
-    NEW STRATEGY: Get soil defaults based on GPS location
-    Uses general Tamil Nadu averages with regional variations
-    NO DATABASE NEEDED!
-    """
-    
-    # Tamil Nadu regions based on latitude/longitude
-    # Northern TN (Chennai, Tiruvallur, Vellore area)
-    if latitude > 12.5:
-        return {
-            'N': 60,
-            'P': 50,
-            'K': 48,
-            'pH': 7.0,
-            'region': 'Northern Tamil Nadu',
-            'typical_crops': 'Rice, Groundnut, Sugarcane'
-        }
-    
-    # Western TN (Coimbatore, Erode, Nilgiris area)
-    elif longitude < 77.5:
-        return {
-            'N': 45,
-            'P': 55,
-            'K': 60,
-            'pH': 6.5,
-            'region': 'Western Tamil Nadu',
-            'typical_crops': 'Cotton, Coffee, Tea, Maize'
-        }
-    
-    # Southern TN (Madurai, Tirunelveli area)
-    elif latitude < 10.0:
-        return {
-            'N': 50,
-            'P': 52,
-            'K': 50,
-            'pH': 7.2,
-            'region': 'Southern Tamil Nadu',
-            'typical_crops': 'Cotton, Pulses, Millets'
-        }
-    
-    # Central/Eastern TN (Thanjavur, Trichy - Rice belt)
-    else:
-        return {
-            'N': 75,
-            'P': 45,
-            'K': 42,
-            'pH': 6.8,
-            'region': 'Central Tamil Nadu (Rice Belt)',
-            'typical_crops': 'Rice, Sugarcane, Banana'
-        }
-
 @app.route('/')
 def home():
     return render_template("index3.html")
@@ -169,6 +157,17 @@ def predict():
         ph = float(request.form['pH'])
         rain = float(request.form['rainfall'])
         district = request.form.get('district', 'Tamil Nadu')
+
+        validation_errors = []
+        if not 0 <= N <= 140: validation_errors.append("N must be in range 0-140")
+        if not 0 <= P <= 145: validation_errors.append("P must be in range 0-145")
+        if not 0 <= K <= 210: validation_errors.append("K must be in range 0-210")
+        if not 8 <= temp <= 45: validation_errors.append("Temperature must be in range 8-45°C")
+        if not 20 <= hum <= 100: validation_errors.append("Humidity must be in range 20-100%")
+        if not 3.5 <= ph <= 10: validation_errors.append("pH must be in range 3.5-10")
+        if not 20 <= rain <= 500: validation_errors.append("Rainfall must be in range 20-500 mm")
+        if validation_errors:
+            return render_template("prediction3.html", error="; ".join(validation_errors))
 
         print(f"\n🌾 XGBoost Prediction: N={N}, P={P}, K={K}, T={temp}, H={hum}, pH={ph}, R={rain}")
 
@@ -287,14 +286,14 @@ def get_soil_data():
             print(f"✅ Weather: {weather_data['temperature']}°C, "
                   f"{weather_data['humidity']}%, {weather_data['rainfall']}mm")
         
-        # Get regional soil defaults (NO DATABASE)
-        print("🗺️ Getting regional soil defaults...")
-        soil_defaults = get_location_defaults(lat, lon)
-        print(f"✅ Region: {soil_defaults['region']}")
+        # District-level defaults for all Tamil Nadu districts
+        soil_defaults = get_nearest_district_profile(lat, lon)
+        soil_defaults = add_micro_location_variation(soil_defaults, lat, lon)
+        print(f"✅ Nearest district profile: {soil_defaults['district']} ({soil_defaults['distance_km']} km)")
         
         return jsonify({
             'success': True,
-            'district': f"{location_name}, {state}",
+            'district': f"{soil_defaults['district']}, Tamil Nadu",
             'N': float(soil_defaults['N']),
             'P': float(soil_defaults['P']),
             'K': float(soil_defaults['K']),
@@ -302,7 +301,8 @@ def get_soil_data():
             'temperature': float(weather_data.get('temperature') or 28.0),
             'humidity': float(weather_data.get('humidity') or 75.0),
             'rainfall': float(weather_data.get('rainfall') or 100.0),
-            'message': f"✅ Real-time weather + {soil_defaults['region']} soil defaults"
+            'soil_type': soil_defaults['soil_type'],
+            'message': f"✅ Real-time weather + district defaults from {soil_defaults['district']}"
         })
     
     except Exception as e:
@@ -456,7 +456,7 @@ if __name__ == "__main__":
         print("   - label_encoder_crop.joblib")
     
     print("✅ Real-time weather integration (Open-Meteo)")
-    print("✅ Regional soil defaults (4 TN regions)")
+    print("✅ District-wise Tamil Nadu soil defaults (39 districts)")
     print("✅ No database required!")
     print("✅ Top 3 crop recommendations")
     print("✅ Soil fertility analysis")
