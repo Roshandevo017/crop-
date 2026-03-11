@@ -55,6 +55,7 @@
 </div>        
 
         <form action="/predict" method="POST">
+            <input type="hidden" name="district" id="district" value="Tamil Nadu">
             <div class="nutrient-section-label">Soil Nutrients (mg/kg)</div>
             <div class="predict-form-grid" style="margin-bottom:24px;">
                 <div class="predict-form-group">
@@ -182,6 +183,7 @@
                         document.getElementById('humidity').value = data.humidity;
                         document.getElementById('pH').value = data.pH;
                         document.getElementById('rainfall').value = data.rainfall;
+                        document.getElementById('district').value = data.district;
                         
                         statusDiv.className = 'location-status success';
                         statusDiv.textContent = `✅ Data loaded for ${data.district} district! You can edit values if needed.`;
