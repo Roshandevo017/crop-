@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoilSense — ML Crop Recommendation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='demo.css') }}">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+    <div class="nav-brand">
+        <div class="brand-icon">🌾</div>
+        <h1>Soil<span>Sense</span></h1>
+    </div>
+    <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="{{ url_for('predict') }}" class="nav-cta">Start Prediction →</a></li>
+    </ul>
+</nav>
+
+<section class="hero">
+    <div class="hero-bg-pattern"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="dot"></span>
+            ML-Powered Agricultural Intelligence
+        </div>
+        <h2>Smarter Farming<br>Starts with <em>Better Soil</em></h2>
+        <p>Enter your soil's nutrient profile and environmental data. Our machine learning model analyzes 7 key parameters to recommend the most suitable crop for your land.</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('predict') }}"class="btn btn-primary">
+                🌱 Predict Your Crop
+            </a>
+            <a href="#about" class="btn btn-outline">
+                Learn More ↓
+            </a>
+        </div>
+    </div>
+    <div class="hero-visual">
+        <div class="hero-stats">
+            <div class="stat-card">
+                <div class="stat-icon">🌾</div>
+                <div class="stat-info">
+                    <div class="stat-num">22+ Crops</div>
+                    <div class="stat-label">In recommendation dataset</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-info">
+                    <div class="stat-num">90% Accuracy</div>
+                    <div class="stat-label">Random Forest model</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-info">
+                    <div class="stat-num">Instant Results</div>
+                    <div class="stat-label">Real-time prediction</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="about" class="section-wrapper">
+    <div class="animate-on-scroll">
+        <span class="section-tag">About the Project</span>
+        <h2 class="section-title">Soil Intelligence<br>Meets Machine Learning</h2>
+        <p class="section-subtitle">This system analyzes essential soil and environmental parameters using a trained Random Forest classifier to guide your crop selection decisions.</p>
+    </div>
+    <div class="about-grid">
+        <div class="about-text-block animate-on-scroll">
+            <div class="feature-item">
+                <div class="feature-icon">🧪</div>
+                <div>
+                    <h4>Nutrient Analysis</h4>
+                    <p>Input Nitrogen, Phosphorus, and Potassium levels from your soil test report to get accurate crop compatibility scores.</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🌡️</div>
+                <div>
+                    <h4>Environmental Factors</h4>
+                    <p>Temperature, humidity, pH levels, and rainfall are combined with nutrient data for holistic recommendations.</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🤖</div>
+                <div>
+                    <h4>Random Forest Model</h4>
+                    <p>Trained on thousands of soil records, the model identifies the best matching crop from 22 categories with high precision.</p>
+                </div>
+            </div>
+        </div>
+        <div class="about-visual animate-on-scroll">
+            <div class="params-card">
+                <h3>Input Parameters</h3>
+                <div class="param-list">
+                    <div class="param-row">
+                        <span class="param-name">Nitrogen (N)</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 75%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">mg/kg</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-name">Phosphorus (P)</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">mg/kg</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-name">Potassium (K)</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">mg/kg</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-name">Temperature</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">°C</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-name">Humidity</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">%</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-name">pH Level</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 55%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">0–14</span>
+                    </div>
+                    <div class="param-row">
+                        <span class="param-name">Rainfall</span>
+                        <div class="param-bar">
+                            <div class="param-bar-track">
+                                <div class="param-bar-fill" style="width: 70%"></div>
+                            </div>
+                        </div>
+                        <span class="param-unit">mm</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works" class="section-wrapper prediction-section">
+    <div style="position:relative;z-index:1;text-align:center;">
+        <div class="animate-on-scroll">
+            <span class="section-tag">How It Works</span>
+            <h2 class="section-title">Three Steps to the<br>Right Crop</h2>
+            <p class="section-subtitle">Our streamlined process takes your soil data and returns a crop recommendation in seconds.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:50px;max-width:900px;margin-left:auto;margin-right:auto;" class="animate-on-scroll">
+            <div class="stat-card" style="flex-direction:column;text-align:center;padding:32px 24px;">
+                <div class="stat-icon" style="margin:0 auto 16px;font-size:32px;width:64px;height:64px;">📋</div>
+                <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:rgba(212,160,23,0.4);margin-bottom:8px;">01</div>
+                <div style="font-size:16px;font-weight:600;color:white;margin-bottom:8px;">Enter Soil Data</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;">Fill in your N, P, K values along with temperature, humidity, pH and rainfall readings.</div>
+            </div>
+            <div class="stat-card" style="flex-direction:column;text-align:center;padding:32px 24px;">
+                <div class="stat-icon" style="margin:0 auto 16px;font-size:32px;width:64px;height:64px;">⚙️</div>
+                <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:rgba(212,160,23,0.4);margin-bottom:8px;">02</div>
+                <div style="font-size:16px;font-weight:600;color:white;margin-bottom:8px;">ML Model Analyzes</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;">The Random Forest classifier processes your inputs against patterns from thousands of soil records.</div>
+            </div>
+            <div class="stat-card" style="flex-direction:column;text-align:center;padding:32px 24px;">
+                <div class="stat-icon" style="margin:0 auto 16px;font-size:32px;width:64px;height:64px;">🌾</div>
+                <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:rgba(212,160,23,0.4);margin-bottom:8px;">03</div>
+                <div style="font-size:16px;font-weight:600;color:white;margin-bottom:8px;">Get Recommendation</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;">Instantly receive the most suitable crop for your soil conditions with a clear result.</div>
+            </div>
+        </div>
+        <div style="margin-top:48px;" class="animate-on-scroll">
+            <a href="{{ url_for('predict') }}" class="btn btn-primary" style="display:inline-flex;">
+                🚀 Try It Now — It's Free
+            </a>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="footer-brand">Soil<span>Sense</span></div>
+    <p>© 2025 SoilSense · ML-Powered Crop Recommendation System</p>
+    <p style="color:rgba(255,255,255,0.3);font-size:12px;">PG Final Year Project</p>
+</footer>
+
+<script>
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+        navbar.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => entry.target.classList.add('visible'), i * 120);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

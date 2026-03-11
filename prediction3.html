@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoilSense — Crop Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='demo.css') }}">
+</head>
+<body>
+
+<nav class="navbar scrolled" id="navbar">
+    <div class="nav-brand">
+        <div class="brand-icon">🌾</div>
+        <h1>Soil<span>Sense</span></h1>
+    </div>
+    <ul>
+        <li><a href="/">← Back to Home</a></li>
+    </ul>
+</nav>
+
+<section class="page-hero">
+    <div class="hero-bg-pattern"></div>
+    <div class="page-hero-content">
+        <div class="hero-badge" style="margin:0 auto 20px;">
+            <span class="dot"></span>
+            AI Prediction Engine
+        </div>
+        <h2>Analyze Your<br><em>Soil Profile</em></h2>
+        <p>Enter the values from your soil test report below and our model will identify the most suitable crop for your conditions.</p>
+    </div>
+</section>
+
+<div class="predict-wrapper">
+    <div class="predict-card">
+        <div class="card-header">
+            <div class="card-header-icon">🧪</div>
+            <div>
+                <h3>Soil Parameter Input</h3>
+                <p>All 7 fields are required for accurate prediction</p>
+            </div>
+        </div>
+<div class="location-section">
+    <h3>📍 Auto-Fill Using Your Location</h3>
+    <p style="color: #666; font-size: 14px;">
+        Click below to automatically fetch soil and weather data
+    </p>
+    <button type="button" id="useLocationBtn" class="location-btn">
+        📍 Use My Current Location
+    </button>
+    <div id="locationStatus" class="location-status"></div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">
+    <strong>OR ENTER VALUES MANUALLY ↓</strong>
+</div>        
+
+        <form action="/predict" method="POST">
+            <div class="nutrient-section-label">Soil Nutrients (mg/kg)</div>
+            <div class="predict-form-grid" style="margin-bottom:24px;">
+                <div class="predict-form-group">
+                    <label>Nitrogen (N)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🟩</span>
+                        <input type="number" name="N" id="N" placeholder="e.g. 90" min="0" required>
+                    </div>
+                </div>
+                <div class="predict-form-group">
+                    <label>Phosphorus (P)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🟧</span>
+                        <input type="number" name="P" id="P" placeholder="e.g. 42" min="0" required>
+                    </div>
+                </div>
+                <div class="predict-form-group">
+                    <label>Potassium (K)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🟦</span>
+                        <input type="number" name="K" id="K" placeholder="e.g. 43" min="0" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nutrient-section-label">Environmental Conditions</div>
+            <div class="predict-form-grid">
+                <div class="predict-form-group">
+                    <label>Temperature (°C)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🌡️</span>
+                        <input type="number" step="any" name="temperature" id="temperature" placeholder="e.g. 25.5" required>
+                    </div>
+                </div>
+                <div class="predict-form-group">
+                    <label>Humidity (%)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">💧</span>
+                        <input type="number" step="any" name="humidity" id="humidity" placeholder="e.g. 82" min="0" max="100" required>
+                    </div>
+                </div>
+                <div class="predict-form-group">
+                    <label>pH Value</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">⚗️</span>
+                        <input type="number" step="any" name="pH" id="pH" placeholder="e.g. 6.5" min="0" max="14" required>
+                    </div>
+                </div>
+                <div class="predict-form-group" style="grid-column: 1 / -1;">
+                    <label>Rainfall (mm)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🌧️</span>
+                        <input type="number" step="any" name="rainfall" id="rainfall" placeholder="e.g. 200.0" min="0" required>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:32px;">
+                <button type="submit"  class="btn btn-green" >
+                    🌾 Predict Best Crop
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div style="text-align:center;margin-top:28px;padding-bottom:60px;">
+        <p style="font-size:13px;color:var(--text-light);">
+            💡 Tip: Use your official soil test report values for the most accurate results.
+        </p>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="footer-brand">Soil<span>Sense</span></div>
+    <p>© 2025 SoilSense · ML-Powered Crop Recommendation System</p>
+    <p style="color:rgba(255,255,255,0.3);font-size:12px;">PG Final Year Project</p>
+</footer>
+
+<script>
+    document.querySelectorAll('.predict-form-group input').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.closest('.predict-form-group').style.transform = 'scale(1.01)';
+            this.closest('.predict-form-group').style.transition = 'transform 0.2s ease';
+        });
+        input.addEventListener('blur', function() {
+            this.closest('.predict-form-group').style.transform = 'scale(1)';
+        });
+    });
+    
+    document.getElementById('useLocationBtn').addEventListener('click', function() {
+        const statusDiv = document.getElementById('locationStatus');
+        const btn = this;
+        
+        if (!navigator.geolocation) {
+            statusDiv.className = 'location-status error';
+            statusDiv.textContent = '❌ Location not supported. Please enter values manually.';
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.textContent = '⏳ Getting your location...';
+        statusDiv.className = 'location-status loading';
+        statusDiv.textContent = '📡 Detecting GPS location...';
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                statusDiv.textContent = `📍 Location: ${lat.toFixed(4)}, ${lon.toFixed(4)} - Fetching soil data...`;
+                
+                fetch('/get-soil-data', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({latitude: lat, longitude: lon})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        // Auto-fill your form fields
+                        document.getElementById('N').value = data.N;
+                        document.getElementById('P').value = data.P;
+                        document.getElementById('K').value = data.K;
+                        document.getElementById('temperature').value = data.temperature;
+                        document.getElementById('humidity').value = data.humidity;
+                        document.getElementById('pH').value = data.pH;
+                        document.getElementById('rainfall').value = data.rainfall;
+                        
+                        statusDiv.className = 'location-status success';
+                        statusDiv.textContent = `✅ Data loaded for ${data.district} district! You can edit values if needed.`;
+                        btn.textContent = '✅ Location Data Loaded';
+                    } else {
+                        statusDiv.className = 'location-status error';
+                        statusDiv.textContent = `⚠️ ${data.message}. Please enter values manually.`;
+                        btn.disabled = false;
+                        btn.textContent = '📍 Use My Current Location';
+                    }
+                })
+                .catch(error => {
+                    statusDiv.className = 'location-status error';
+                    statusDiv.textContent = '❌ Failed to fetch data. Please enter manually.';
+                    btn.disabled = false;
+                    btn.textContent = '📍 Use My Current Location';
+                    console.log(error);
+                });
+            },
+            function(error) {
+                let msg = '❌ ';
+                if (error.code === 1) msg += 'Location access denied. Enable in browser settings.';
+                else if (error.code === 2) msg += 'Location unavailable. Check GPS/internet.';
+                else msg += 'Location error. Please try again.';
+                
+                statusDiv.className = 'location-status error';
+                statusDiv.textContent = msg;
+                btn.disabled = false;
+                btn.textContent = '📍 Use My Current Location';
+            },
+            {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
+        );
+    });
+    </script>
+
+</body>
+</html>
